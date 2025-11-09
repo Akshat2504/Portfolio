@@ -1,0 +1,1 @@
+const galleryData=require("./gallery.json")
