@@ -1161,7 +1161,11 @@
             object-fit: contain;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
         }
-
+    @media (max-width: 768px){
+    #videoModal .close-modal{z-index:999999!important;position:fixed!important;pointer-events:auto!important;}
+    #videoModal{pointer-events:none;}
+    #videoModal .modal-content,#videoModal video{pointer-events:auto;}
+    }
     </style>
 </head>
 <body>
