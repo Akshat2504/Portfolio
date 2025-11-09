@@ -438,8 +438,8 @@
         }
 
         @keyframes labelPulse {
-            0%, 100% { transform: scale(1.1) rotate(5deg) opacity: 0.8; }
-            50% { transform: scale(1.2) rotate(5deg) opacity: 1; }
+            0%, 100% { transform: scale(1.1) rotate(5deg); opacity: 0.8; }
+            50% { transform: scale(1.2) rotate(5deg); opacity: 1; }
         }
 
         @keyframes cardFlip {
@@ -1205,13 +1205,12 @@
         <div class="section-title fade-in">My Work</div>
         <div class="category-gallery-grid">
             <!-- Gallery items will be populated by JavaScript -->
-            <!-- added loading="lazy" to thumbnails -->
-            <div class="category-work-item"><img class="gallery-image" loading="lazy" src="Main/poster1.png" alt="Poster 1"></div>
-            <div class="category-work-item"><img class="gallery-image" loading="lazy" src="Main/poster5.png" alt="Poster 2"></div>
-            <div class="category-work-item"><img class="gallery-image" loading="lazy" src="Main/poster3.png" alt="Poster 3"></div>
-            <div class="category-work-item "><img class="gallery-image" loading="lazy" src="Main/poster4.png" alt="Poster 4"></div>
-            <div class="category-work-item "><img class="gallery-image" loading="lazy" src="Main/poster2.png" alt="Poster 5"></div>
-            <div class="category-work-item"><img class="gallery-image" loading="lazy" src="Main/poster6.png" alt="Poster 6"></div>
+            <div class="category-work-item"><img class="gallery-image" src="Main/poster1.png" alt="Poster 1"></div>
+            <div class="category-work-item"><img class="gallery-image" src="Main/poster5.png" alt="Poster 2"></div>
+            <div class="category-work-item"><img class="gallery-image" src="Main/poster3.png" alt="Poster 3"></div>
+            <div class="category-work-item "><img class="gallery-image" src="Main/poster4.png" alt="Poster 4"></div>
+            <div class="category-work-item "><img class="gallery-image" src="Main/poster2.png" alt="Poster 5"></div>
+            <div class="category-work-item"><img class="gallery-image" src="Main/poster6.png" alt="Poster 6"></div>
         </div>
         <label for="btn" class="line"></label>
         <div class="btn-cnt-center">
@@ -1487,7 +1486,7 @@
             // Clear previous sources
             modalVideo.innerHTML = '';
 
-            // Create <source> element and append dynamically
+            // ✅ Create <source> element and append dynamically
             const source = document.createElement('source');
             source.src = src;
             source.type = 'video/mp4';
@@ -1512,18 +1511,29 @@
             videoModal.style.display = 'none';
         }
 
-        // Close when clicking outside the video
+        // ✅ Close when clicking outside the video
         document.getElementById('videoModal').addEventListener('click', function(e) {
             if (e.target.id === 'videoModal') {
                 closeVideoModal();
             }
         });
 
-        // galleryData will be loaded on demand (only when user clicks "Load More")
-        let galleryData = null;
+        // Gallery data - Add your image URLs here
+        let galleryData = {
+            "posters": [
+                {"src":"Main/poster1.png","title":"Poster 1"},
+                {"src":"Main/poster2.png","title":"Poster 2"}
+            ],
+            "videos": []
+        };
+        fetch('gallery.json').then(response=>response.json()).then(data=>{
+            galleryData = data;
+        }).catch(error=>{
+            // silent fallback — if gallery.json is missing or slow, UI still works
+            console.error('Error loading gallery data:',error);
+        });
 
-        // Helper to render category gallery (used after data is available)
-        function renderCategoryGallery(category) {
+        function openCategoryGallery(category) {
             const categoryTitles = {
                 posters: '🎨 MY  Work',
                 logos: '⚡ Logo Designs',
@@ -1564,25 +1574,17 @@
 
                 if (item.src && !isPlaceholder) {
                     if (category === 'videos') {
-                        // Display playable video with preload="none" to avoid auto-downloading
+                        // ✅ Display playable video
                         workItem.innerHTML = `
-                            <video class="video-ctn" width="200" height="200" muted loop playsinline preload="none" onmouseover="this.play()" onmouseout="this.pause(); this.currentTime=0;">
+                            <video class ="video-ctn" width="200" height="200" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause(); this.currentTime=0;">
                                 <source src="${item.src}" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>
                         `;
                         workItem.onclick = () => openVideoModal(item.src);
                     } else {
-                        // Display the image if a valid URL is provided; set loading="lazy"
-                        const img = document.createElement('img');
-                        img.loading = 'lazy';
-                        img.src = item.src;
-                        img.alt = item.title || '';
-                        img.onerror = function() {
-                            this.onerror = null;
-                            this.parentElement.innerHTML = `<div class='category-placeholder'><div class='category-placeholder-icon'>${categoryIcons[category]}</div><p>${item.title}</p><small style='color: #666; margin-top: 0.5rem;'>Image not found</small></div>`;
-                        };
-                        workItem.appendChild(img);
+                        // Display the image if a valid URL is provided
+                        workItem.innerHTML = `<img src="${item.src}" alt="${item.title}" onerror="this.onerror=null; this.parentElement.innerHTML=\`<div class='category-placeholder'><div class='category-placeholder-icon'>${categoryIcons[category]}</div><p>${item.title}</p><small style='color: #666; margin-top: 0.5rem;'>Image not found</small></div>\`">`;
                         workItem.onclick = () => openImageModal(item.src);
                     }
                 } else {
@@ -1600,34 +1602,6 @@
             });
 
             document.getElementById('categoryModal').style.display = 'block';
-        }
-
-        // This now only fetches gallery.json when the user actually clicks "Load More"
-        function openCategoryGallery(category) {
-            // If data already loaded, render immediately
-            if (galleryData) {
-                renderCategoryGallery(category);
-                return;
-            }
-
-            // Otherwise fetch on demand
-            fetch('gallery.json')
-                .then(response => {
-                    if (!response.ok) throw new Error('Failed to load gallery.json');
-                    return response.json();
-                })
-                .then(data => {
-                    galleryData = data;
-                    renderCategoryGallery(category);
-                })
-                .catch(error => {
-                    console.error('Error loading gallery data:', error);
-                    // fallback to empty structure so UI still works
-                    galleryData = { posters: [], videos: [] };
-                    renderCategoryGallery(category);
-                    // optional: show a modal informing user that gallery failed to load
-                    // openModal('Gallery Error', 'Could not load gallery.json — check console for details.');
-                });
         }
 
         function closeCategoryModal() {
